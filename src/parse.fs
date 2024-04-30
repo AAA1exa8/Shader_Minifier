@@ -195,8 +195,12 @@ type private ParseImpl() =
                        "smooth"; "flat"; "noperspective"
                       ]
                       |> List.map keyword |> choice <?> "Type qualifier"
-        let layout = keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')')
-                     |>> (function s -> "layout(" + s + ")")
+        let layout = 
+            keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')') .>> opt (keyword "in")
+            |>> (function
+                | s, Some _ -> "layout(" + s + ") in"
+                | s, None -> "layout(" + s + ")"
+                | _ -> failwith "layout")
         let qualifier = many (storage <|> layout)
         let typeSpec = structSpecifier <|> (ident |>> (fun id -> Ast.TypeName id.Name))
         let arraySizes = many (between (ch '[') (ch ']') expr)
